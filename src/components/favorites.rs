@@ -1,0 +1,34 @@
+use dioxus::prelude::*;
+
+use crate::backend::{delete_dog, list_dogs};
+
+#[component]
+pub fn Favorites() -> Element {
+    // Create a pending resource that resolves to the list of dogs from the backend
+    // Wait for the favorites list to resolve with `.suspend()`
+    let mut favorites = use_resource(list_dogs);
+    let lst = favorites.suspend()?;
+    
+    rsx! {
+        div { id: "favorites",
+            div { id: "favorites-container",
+                for (id, url) in lst().unwrap() {
+                    // Render a div for each photo using the dog's ID as the list key
+                    div {
+                        key: "{id}",
+                        class: "favorite-dog",
+                        img { src: "{url}" }
+                        button {
+                            id: "delete",
+                            onclick: move |_| async move {
+                                _ = delete_dog(id).await;
+                                favorites.restart();
+                            },
+                            "🗑️"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
